@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type Product = {
@@ -13,9 +12,6 @@ type Product = {
 };
 
 export default function Home() {
-  const searchParams = useSearchParams();
-  const productId = searchParams.get("product");
-
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -26,6 +22,7 @@ export default function Home() {
   const productRefs = useRef<Record<string, HTMLElement | null>>({});
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "";
 
+  // Load products from Supabase
   useEffect(() => {
     async function loadProducts() {
       const { data, error } = await supabase
@@ -35,7 +32,9 @@ export default function Home() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        setError("Products load nahi ho paaye. Please refresh karke try karein.");
+        setError(
+          "Products load nahi ho paaye. Please refresh karke try karein."
+        );
       } else {
         setProducts((data || []) as Product[]);
       }
@@ -46,8 +45,15 @@ export default function Home() {
     loadProducts();
   }, []);
 
+  // Open the correct product link by scrolling to and highlighting it
   useEffect(() => {
-    if (loading || !productId || products.length === 0) return;
+    if (loading || products.length === 0) return;
+
+    const productId = new URLSearchParams(
+      window.location.search
+    ).get("product");
+
+    if (!productId) return;
 
     const product = products.find((item) => item.id === productId);
 
@@ -70,13 +76,16 @@ export default function Home() {
       window.clearTimeout(timer);
       window.clearTimeout(highlightTimer);
     };
-  }, [loading, productId, products]);
+  }, [loading, products]);
 
+  // Close enlarged image with Escape and lock background scrolling
   useEffect(() => {
     if (!selectedImage) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setSelectedImage(null);
+      if (event.key === "Escape") {
+        setSelectedImage(null);
+      }
     }
 
     document.addEventListener("keydown", handleKeyDown);
@@ -88,6 +97,7 @@ export default function Home() {
     };
   }, [selectedImage]);
 
+  // WhatsApp product enquiry
   function askForProduct(product: Product) {
     if (!whatsappNumber) {
       alert("WhatsApp number abhi set nahi hai.");
@@ -116,6 +126,7 @@ Please share more details about this product. Thank you!`;
 
   return (
     <main className="min-h-screen bg-[#f8f6f1] text-[#191919]">
+      {/* Header and logo */}
       <header className="border-b border-black/10 px-4 py-5 sm:px-8">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-3">
           {!logoFailed && (
@@ -138,11 +149,16 @@ Please share more details about this product. Thank you!`;
         </div>
       </header>
 
+      {/* Product collection */}
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
         <div className="mb-6 flex items-end justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Our Collection</h2>
-            <p className="mt-1 text-sm text-black/55">Find your next favourite.</p>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Our Collection
+            </h2>
+            <p className="mt-1 text-sm text-black/55">
+              Find your next favourite.
+            </p>
           </div>
 
           <span className="text-xs text-black/50">
@@ -157,7 +173,9 @@ Please share more details about this product. Thank you!`;
         )}
 
         {!loading && error && (
-          <p className="py-12 text-center text-sm text-red-600">{error}</p>
+          <p className="py-12 text-center text-sm text-red-600">
+            {error}
+          </p>
         )}
 
         {!loading && !error && products.length === 0 && (
@@ -202,7 +220,9 @@ Please share more details about this product. Thank you!`;
                   )}
                 </div>
 
-                <p className="mt-3 truncate text-sm font-medium">{product.name}</p>
+                <p className="mt-3 truncate text-sm font-medium">
+                  {product.name}
+                </p>
 
                 <p className="mt-1 text-lg font-bold">
                   ₹{Number(product.price).toLocaleString("en-IN")}
@@ -221,11 +241,17 @@ Please share more details about this product. Thank you!`;
         )}
       </section>
 
+      {/* Footer */}
       <footer className="mt-8 border-t border-black/10 px-4 py-6 text-center">
-        <p className="text-xs font-semibold tracking-[0.15em]">SQVER CIRCLE STORE</p>
-        <p className="mt-1 text-xs text-black/50">Thanks for visiting our store.</p>
+        <p className="text-xs font-semibold tracking-[0.15em]">
+          SQVER CIRCLE STORE
+        </p>
+        <p className="mt-1 text-xs text-black/50">
+          Thanks for visiting our store.
+        </p>
       </footer>
 
+      {/* Full-screen image zoom */}
       {selectedImage?.image_url && (
         <div
           className="fixed inset-0 z-50 flex animate-[fadeIn_200ms_ease-out] items-center justify-center bg-black/95 p-4 sm:p-8"
@@ -254,10 +280,14 @@ Please share more details about this product. Thank you!`;
             />
 
             <div className="mt-4 text-center text-white">
-              <p className="text-base font-semibold">{selectedImage.name}</p>
+              <p className="text-base font-semibold">
+                {selectedImage.name}
+              </p>
+
               <p className="mt-1 text-lg font-bold">
                 ₹{Number(selectedImage.price).toLocaleString("en-IN")}
               </p>
+
               <p className="mt-2 text-xs text-white/50">
                 Tap outside the image or × to close
               </p>
@@ -268,13 +298,25 @@ Please share more details about this product. Thank you!`;
 
       <style jsx global>{`
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
+
         @keyframes zoomIn {
-          from { opacity: 0; transform: scale(0.92); }
-          to { opacity: 1; transform: scale(1); }
+          from {
+            opacity: 0;
+            transform: scale(0.92);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
+
         @media (prefers-reduced-motion: reduce) {
           .animate-\\[fadeIn_200ms_ease-out\\],
           .animate-\\[zoomIn_250ms_ease-out\\] {
