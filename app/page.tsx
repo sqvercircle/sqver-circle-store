@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type Product = {
@@ -12,14 +13,18 @@ type Product = {
 };
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const productId = searchParams.get("product");
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [logoFailed, setLogoFailed] = useState(false);
   const [selectedImage, setSelectedImage] = useState<Product | null>(null);
+  const [highlightedProductId, setHighlightedProductId] = useState<string | null>(null);
 
-  const whatsappNumber =
-    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "";
+  const productRefs = useRef<Record<string, HTMLElement | null>>({});
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "";
 
   useEffect(() => {
     async function loadProducts() {
@@ -30,9 +35,7 @@ export default function Home() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        setError(
-          "Products load nahi ho paaye. Please refresh karke try karein."
-        );
+        setError("Products load nahi ho paaye. Please refresh karke try karein.");
       } else {
         setProducts((data || []) as Product[]);
       }
@@ -44,12 +47,36 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (loading || !productId || products.length === 0) return;
+
+    const product = products.find((item) => item.id === productId);
+
+    if (!product) return;
+
+    setHighlightedProductId(productId);
+
+    const timer = window.setTimeout(() => {
+      productRefs.current[productId]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 250);
+
+    const highlightTimer = window.setTimeout(() => {
+      setHighlightedProductId(null);
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(highlightTimer);
+    };
+  }, [loading, productId, products]);
+
+  useEffect(() => {
     if (!selectedImage) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setSelectedImage(null);
-      }
+      if (event.key === "Escape") setSelectedImage(null);
     }
 
     document.addEventListener("keydown", handleKeyDown);
@@ -114,12 +141,8 @@ Please share more details about this product. Thank you!`;
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
         <div className="mb-6 flex items-end justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Our Collection
-            </h2>
-            <p className="mt-1 text-sm text-black/55">
-              Find your next favourite.
-            </p>
+            <h2 className="text-2xl font-semibold tracking-tight">Our Collection</h2>
+            <p className="mt-1 text-sm text-black/55">Find your next favourite.</p>
           </div>
 
           <span className="text-xs text-black/50">
@@ -134,9 +157,7 @@ Please share more details about this product. Thank you!`;
         )}
 
         {!loading && error && (
-          <p className="py-12 text-center text-sm text-red-600">
-            {error}
-          </p>
+          <p className="py-12 text-center text-sm text-red-600">{error}</p>
         )}
 
         {!loading && !error && products.length === 0 && (
@@ -148,7 +169,17 @@ Please share more details about this product. Thank you!`;
         {!loading && !error && products.length > 0 && (
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-4">
             {products.map((product) => (
-              <article key={product.id} className="min-w-0">
+              <article
+                key={product.id}
+                ref={(element) => {
+                  productRefs.current[product.id] = element;
+                }}
+                className={`min-w-0 rounded-xl p-2 transition-all duration-500 ${
+                  highlightedProductId === product.id
+                    ? "scale-[1.02] bg-white shadow-xl ring-2 ring-[#191919]"
+                    : ""
+                }`}
+              >
                 <div className="overflow-hidden rounded-lg bg-[#eeece6]">
                   {product.image_url ? (
                     <button
@@ -171,9 +202,7 @@ Please share more details about this product. Thank you!`;
                   )}
                 </div>
 
-                <p className="mt-3 truncate text-sm font-medium">
-                  {product.name}
-                </p>
+                <p className="mt-3 truncate text-sm font-medium">{product.name}</p>
 
                 <p className="mt-1 text-lg font-bold">
                   ₹{Number(product.price).toLocaleString("en-IN")}
@@ -193,15 +222,11 @@ Please share more details about this product. Thank you!`;
       </section>
 
       <footer className="mt-8 border-t border-black/10 px-4 py-6 text-center">
-        <p className="text-xs font-semibold tracking-[0.15em]">
-          SQVER CIRCLE STORE
-        </p>
-        <p className="mt-1 text-xs text-black/50">
-          Thanks for visiting our store.
-        </p>
+        <p className="text-xs font-semibold tracking-[0.15em]">SQVER CIRCLE STORE</p>
+        <p className="mt-1 text-xs text-black/50">Thanks for visiting our store.</p>
       </footer>
 
-      {selectedImage && selectedImage.image_url && (
+      {selectedImage?.image_url && (
         <div
           className="fixed inset-0 z-50 flex animate-[fadeIn_200ms_ease-out] items-center justify-center bg-black/95 p-4 sm:p-8"
           role="dialog"
@@ -229,9 +254,7 @@ Please share more details about this product. Thank you!`;
             />
 
             <div className="mt-4 text-center text-white">
-              <p className="text-base font-semibold">
-                {selectedImage.name}
-              </p>
+              <p className="text-base font-semibold">{selectedImage.name}</p>
               <p className="mt-1 text-lg font-bold">
                 ₹{Number(selectedImage.price).toLocaleString("en-IN")}
               </p>
@@ -248,18 +271,10 @@ Please share more details about this product. Thank you!`;
           from { opacity: 0; }
           to { opacity: 1; }
         }
-
         @keyframes zoomIn {
-          from {
-            opacity: 0;
-            transform: scale(0.92);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
+          from { opacity: 0; transform: scale(0.92); }
+          to { opacity: 1; transform: scale(1); }
         }
-
         @media (prefers-reduced-motion: reduce) {
           .animate-\\[fadeIn_200ms_ease-out\\],
           .animate-\\[zoomIn_250ms_ease-out\\] {
