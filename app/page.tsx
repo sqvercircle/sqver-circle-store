@@ -29,7 +29,9 @@ export default function Home() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        setError("Products load nahi ho paaye. Please refresh karke try karein.");
+        setError(
+          "Products load nahi ho paaye. Please refresh karke try karein."
+        );
       } else {
         setProducts((data || []) as Product[]);
       }
@@ -46,7 +48,17 @@ export default function Home() {
       return;
     }
 
-    const message = `Hi SQVER CIRCLE STORE, I am interested in ${product.name}, priced at ₹${product.price}. Please share more details.`;
+    const productUrl = `${window.location.origin}/?product=${encodeURIComponent(product.id)}`;
+
+    const message = `Hi SQVER CIRCLE STORE! 👋
+
+I am interested in this product:
+
+Product: ${product.name}
+Price: ₹${Number(product.price).toLocaleString("en-IN")}
+Product Link: ${productUrl}
+
+Please share more details about this product. Thank you!`;
 
     window.open(
       `https://wa.me/${whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`,
@@ -57,7 +69,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#f8f6f1] text-[#191919]">
-      {/* Store branding */}
       <header className="border-b border-black/10 px-4 py-5 sm:px-8">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-3">
           {!logoFailed && (
@@ -80,7 +91,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Products */}
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
         <div className="mb-6 flex items-end justify-between">
           <div>
@@ -91,6 +101,7 @@ export default function Home() {
               Find your next favourite.
             </p>
           </div>
+
           <span className="text-xs text-black/50">
             {loading ? "Loading..." : `${products.length} products`}
           </span>
@@ -154,7 +165,6 @@ export default function Home() {
         )}
       </section>
 
-      {/* Simple footer branding */}
       <footer className="mt-8 border-t border-black/10 px-4 py-6 text-center">
         <p className="text-xs font-semibold tracking-[0.15em]">
           SQVER CIRCLE STORE
