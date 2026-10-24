@@ -16,6 +16,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [logoFailed, setLogoFailed] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<Product | null>(null);
 
   const whatsappNumber =
     process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "";
@@ -42,13 +43,32 @@ export default function Home() {
     loadProducts();
   }, []);
 
+  useEffect(() => {
+    if (!selectedImage) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSelectedImage(null);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [selectedImage]);
+
   function askForProduct(product: Product) {
     if (!whatsappNumber) {
       alert("WhatsApp number abhi set nahi hai.");
       return;
     }
 
-    const productUrl = `${window.location.origin}/?product=${encodeURIComponent(product.id)}`;
+    const productUrl =
+      `${window.location.origin}/?product=${encodeURIComponent(product.id)}`;
 
     const message = `Hi SQVER CIRCLE STORE! 👋
 
@@ -131,12 +151,19 @@ Please share more details about this product. Thank you!`;
               <article key={product.id} className="min-w-0">
                 <div className="overflow-hidden rounded-lg bg-[#eeece6]">
                   {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      loading="lazy"
-                      className="aspect-[3/4] w-full object-cover transition duration-300 hover:scale-[1.03]"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImage(product)}
+                      aria-label={`View larger image of ${product.name}`}
+                      className="group block w-full cursor-zoom-in"
+                    >
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        loading="lazy"
+                        className="aspect-[3/4] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 group-active:scale-100"
+                      />
+                    </button>
                   ) : (
                     <div className="flex aspect-[3/4] items-center justify-center text-sm text-black/35">
                       Product Image
@@ -173,6 +200,73 @@ Please share more details about this product. Thank you!`;
           Thanks for visiting our store.
         </p>
       </footer>
+
+      {selectedImage && selectedImage.image_url && (
+        <div
+          className="fixed inset-0 z-50 flex animate-[fadeIn_200ms_ease-out] items-center justify-center bg-black/95 p-4 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Large image of ${selectedImage.name}`}
+          onClick={() => setSelectedImage(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setSelectedImage(null)}
+            aria-label="Close enlarged image"
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-3xl text-white transition hover:bg-white/25"
+          >
+            ×
+          </button>
+
+          <div
+            className="flex max-h-full max-w-5xl animate-[zoomIn_250ms_ease-out] flex-col items-center"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <img
+              src={selectedImage.image_url}
+              alt={selectedImage.name}
+              className="max-h-[75vh] max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[80vh]"
+            />
+
+            <div className="mt-4 text-center text-white">
+              <p className="text-base font-semibold">
+                {selectedImage.name}
+              </p>
+              <p className="mt-1 text-lg font-bold">
+                ₹{Number(selectedImage.price).toLocaleString("en-IN")}
+              </p>
+              <p className="mt-2 text-xs text-white/50">
+                Tap outside the image or × to close
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes zoomIn {
+          from {
+            opacity: 0;
+            transform: scale(0.92);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-\\[fadeIn_200ms_ease-out\\],
+          .animate-\\[zoomIn_250ms_ease-out\\] {
+            animation: none;
+          }
+        }
+      `}</style>
     </main>
   );
 }
