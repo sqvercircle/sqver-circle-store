@@ -26,6 +26,8 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "hidden">("all");
 
   const loadProducts = useCallback(async () => {
     const { data, error } = await supabase
@@ -291,251 +293,178 @@ export default function AdminPage() {
     router.refresh();
   }
 
+  const activeCount = products.filter((product) => product.is_active).length;
+  const hiddenCount = products.length - activeCount;
+  const visibleProducts = products.filter((product) => {
+    const matchesSearch = product.name.toLowerCase().includes(search.trim().toLowerCase());
+    const matchesFilter = filter === "all" || (filter === "active" ? product.is_active : !product.is_active);
+    return matchesSearch && matchesFilter;
+  });
+
   if (checking) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f8f6f1] text-sm text-black/60">
-        Admin access check ho raha hai...
+      <main className="flex min-h-screen items-center justify-center bg-[#f4f1eb] px-4 text-sm text-[#777168]">
+        <div className="flex items-center gap-3 rounded-2xl border border-[#e7e1d7] bg-white px-5 py-4 shadow-sm">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#9a805c]" />
+          Admin access check ho raha hai...
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f6f1] text-[#191919]">
-      <header className="border-b border-black/10 bg-white px-4 py-5 sm:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-bold tracking-[0.1em]">
-              SQVER CIRCLE
-            </h1>
-            <p className="mt-1 text-xs text-black/50">
-              Store Admin Panel
-            </p>
+    <main className="min-h-screen bg-[#f4f1eb] text-[#201f1c]">
+      <header className="border-b border-white/10 bg-[#201f1c] text-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 sm:px-8 lg:px-10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-sm font-black tracking-tight">SC</div>
+            <div>
+              <h1 className="text-sm font-bold tracking-[0.2em] sm:text-base">SQVER CIRCLE</h1>
+              <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/55">Store management</p>
+            </div>
           </div>
-
           <button
             type="button"
             onClick={logout}
-            className="border border-black/20 px-4 py-2 text-sm font-medium hover:bg-black hover:text-white"
+            className="rounded-xl border border-white/25 px-4 py-2.5 text-xs font-semibold transition hover:bg-white hover:text-[#201f1c] sm:text-sm"
           >
-            Logout
+            Log out ↗
           </button>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-8 lg:grid-cols-[380px_1fr]">
-        <section className="h-fit rounded-xl border border-black/10 bg-white p-5 sm:p-6">
-          <h2 className="text-xl font-semibold">
-            {editingId ? "Edit Product" : "Add New Product"}
-          </h2>
+      <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8 sm:py-10 lg:px-10">
+        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#927b5d]">Your workspace</p>
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Good to see you.</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[#777168]">Apne store ke products, prices aur website visibility yahan se manage karo.</p>
+          </div>
+          <div className="rounded-2xl border border-[#e5ded2] bg-white px-4 py-3 text-sm shadow-sm">
+            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="font-medium">Admin panel active</span>
+          </div>
+        </div>
 
-          <p className="mt-1 text-sm text-black/50">
-            Product details aur photo manage karo.
-          </p>
-
-          <form
-            key={editingId || "new-product"}
-            onSubmit={addOrUpdateProduct}
-            className="mt-6 space-y-5"
-          >
-            <div>
-              <label
-                htmlFor="product-name"
-                className="mb-2 block text-sm font-medium"
-              >
-                Product Name
-              </label>
-              <input
-                id="product-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Example: Classic Black Shirt"
-                required
-                className="w-full rounded-lg border border-black/15 px-3 py-3 outline-none focus:border-black"
-              />
+        <section className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+          <div className="rounded-2xl border border-[#e6dfd4] bg-white p-5 shadow-[0_4px_20px_rgba(42,35,25,0.03)] sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#898174]">Total products</p>
+            <div className="mt-4 flex items-end justify-between">
+              <p className="text-3xl font-semibold tracking-tight">{products.length}</p>
+              <span className="rounded-lg bg-[#f4f1eb] px-3 py-2 text-xs text-[#756a5a]">In catalog</span>
             </div>
-
-            <div>
-              <label
-                htmlFor="product-price"
-                className="mb-2 block text-sm font-medium"
-              >
-                Price (₹)
-              </label>
-              <input
-                id="product-price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(event) => setPrice(event.target.value)}
-                placeholder="499"
-                required
-                className="w-full rounded-lg border border-black/15 px-3 py-3 outline-none focus:border-black"
-              />
+          </div>
+          <div className="rounded-2xl border border-[#e6dfd4] bg-white p-5 shadow-[0_4px_20px_rgba(42,35,25,0.03)] sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#898174]">Visible online</p>
+            <div className="mt-4 flex items-end justify-between">
+              <p className="text-3xl font-semibold tracking-tight">{activeCount}</p>
+              <span className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">Shown on site</span>
             </div>
-
-            <div>
-              <label
-                htmlFor="product-image"
-                className="mb-2 block text-sm font-medium"
-              >
-                {editingId
-                  ? "Change Image (optional)"
-                  : "Product Image"}
-              </label>
-              <input
-                ref={fileInput}
-                id="product-image"
-                type="file"
-                accept="image/*"
-                required={!editingId}
-                onChange={(event) =>
-                  setImage(event.target.files?.[0] || null)
-                }
-                className="w-full rounded-lg border border-black/15 p-3 text-sm"
-              />
-              {editingId && (
-                <p className="mt-2 text-xs text-black/50">
-                  Nayi image select nahi karoge toh purani image rahegi.
-                </p>
-              )}
-              {image && (
-                <p className="mt-2 break-all text-xs text-black/50">
-                  Selected: {image.name}
-                </p>
-              )}
+          </div>
+          <div className="rounded-2xl border border-[#e6dfd4] bg-white p-5 shadow-[0_4px_20px_rgba(42,35,25,0.03)] sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#898174]">Hidden products</p>
+            <div className="mt-4 flex items-end justify-between">
+              <p className="text-3xl font-semibold tracking-tight">{hiddenCount}</p>
+              <span className="rounded-lg bg-[#f4f1eb] px-3 py-2 text-xs text-[#756a5a]">Not shown</span>
             </div>
-
-            {message && (
-              <p
-                role="status"
-                className="rounded-lg bg-green-50 p-3 text-sm text-green-800"
-              >
-                {message}
-              </p>
-            )}
-
-            {error && (
-              <p
-                role="alert"
-                className="break-words rounded-lg bg-red-50 p-3 text-sm text-red-700"
-              >
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full rounded-lg bg-[#191919] px-4 py-3.5 text-sm font-semibold text-white hover:bg-[#48443c] disabled:opacity-60"
-            >
-              {saving
-                ? "Saving..."
-                : editingId
-                  ? "Save Changes"
-                  : "Add Product"}
-            </button>
-
-            {editingId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="w-full rounded-lg border border-black/20 px-4 py-3 text-sm font-medium hover:bg-black/5"
-              >
-                Cancel Editing
-              </button>
-            )}
-          </form>
+          </div>
         </section>
 
-        <section>
-          <div className="mb-5 flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold">Your Products</h2>
-              <p className="mt-1 text-sm text-black/50">
-                Edit, hide, show or delete products.
-              </p>
-            </div>
-            <span className="text-sm text-black/50">
-              {products.length} total
-            </span>
+        {(message || error) && (
+          <div className="mb-6 space-y-2">
+            {message && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">✓ {message}</p>}
+            {error && <p role="alert" className="break-words rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
           </div>
+        )}
 
-          {products.length === 0 ? (
-            <div className="rounded-xl border border-black/10 bg-white px-5 py-12 text-center text-sm text-black/50">
-              Abhi products nahi hain. Pehla product add karo.
+        <div className="grid items-start gap-6 lg:grid-cols-[350px_minmax(0,1fr)] xl:gap-8">
+          <section className="overflow-hidden rounded-2xl border border-[#e5ded2] bg-white shadow-[0_8px_30px_rgba(42,35,25,0.04)] lg:sticky lg:top-6">
+            <div className="bg-[#eae3d7] px-5 py-5 sm:px-6">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#87745a]">Product details</p>
+              <h3 className="mt-2 text-xl font-semibold">{editingId ? "Edit product" : "Add a product"}</h3>
+              <p className="mt-1 text-sm text-[#746d62]">Naam, price aur photo update karo.</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {products.map((product) => (
-                <article
-                  key={product.id}
-                  className="overflow-hidden rounded-xl border border-black/10 bg-white"
-                >
-                  <div className="flex gap-3 p-3">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="h-24 w-24 shrink-0 rounded-lg bg-[#eeece6] object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-[#eeece6] text-xs text-black/40">
-                        No image
-                      </div>
-                    )}
 
-                    <div className="min-w-0 flex-1">
-                      <p className="break-words text-sm font-semibold">
-                        {product.name}
-                      </p>
-                      <p className="mt-1 font-bold">
-                        ₹{Number(product.price).toLocaleString("en-IN")}
-                      </p>
-                      <p
-                        className={`mt-2 text-xs ${
-                          product.is_active
-                            ? "text-green-700"
-                            : "text-black/45"
-                        }`}
-                      >
-                        {product.is_active
-                          ? "Visible on website"
-                          : "Hidden from website"}
-                      </p>
-                    </div>
-                  </div>
+            <form key={editingId || "new-product"} onSubmit={addOrUpdateProduct} className="space-y-5 p-5 sm:p-6">
+              <div>
+                <label htmlFor="product-name" className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-[#6d665c]">Product name</label>
+                <input id="product-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Classic Black Shirt" required className="w-full rounded-xl border border-[#ded8ce] bg-[#fcfbf9] px-3.5 py-3 text-sm outline-none transition placeholder:text-[#aaa398] focus:border-[#8f795c] focus:bg-white focus:ring-4 focus:ring-[#b7a487]/15" />
+              </div>
+              <div>
+                <label htmlFor="product-price" className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-[#6d665c]">Price (₹)</label>
+                <div className="flex items-center rounded-xl border border-[#ded8ce] bg-[#fcfbf9] focus-within:border-[#8f795c] focus-within:ring-4 focus-within:ring-[#b7a487]/15">
+                  <span className="border-r border-[#e8e2d9] px-3.5 py-3 text-sm text-[#81796d]">₹</span>
+                  <input id="product-price" type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="499" required className="w-full rounded-r-xl bg-transparent px-3 py-3 text-sm outline-none placeholder:text-[#aaa398]" />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="product-image" className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-[#6d665c]">{editingId ? "Replace photo (optional)" : "Product photo"}</label>
+                <input ref={fileInput} id="product-image" type="file" accept="image/*" required={!editingId} onChange={(event) => setImage(event.target.files?.[0] || null)} className="w-full rounded-xl border border-dashed border-[#d5ccbd] bg-[#fcfbf9] p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-[#eae3d7] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[#514738] hover:border-[#9b8668]" />
+                {editingId && <p className="mt-2 text-xs leading-5 text-[#898174]">Nayi photo select nahi karoge toh purani photo rahegi.</p>}
+                {image && <p className="mt-2 break-all rounded-lg bg-[#f4f1eb] px-3 py-2 text-xs text-[#756a5a]">Selected: {image.name}</p>}
+              </div>
+              <button type="submit" disabled={saving} className="w-full rounded-xl bg-[#201f1c] px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#49443a] disabled:cursor-not-allowed disabled:opacity-60">
+                {saving ? "Saving product…" : editingId ? "Save changes  →" : "+  Add product"}
+              </button>
+              {editingId && <button type="button" onClick={resetForm} className="w-full rounded-xl border border-[#ded8ce] px-4 py-3 text-sm font-semibold text-[#625b51] transition hover:bg-[#f7f4ef]">Cancel editing</button>}
+              <p className="text-center text-[11px] leading-5 text-[#9a9286]">Changes are saved to your store catalog.</p>
+            </form>
+          </section>
 
-                  <div className="grid grid-cols-3 border-t border-black/10">
-                    <button
-                      type="button"
-                      onClick={() => startEditing(product)}
-                      className="border-r border-black/10 px-1 py-3 text-xs font-semibold hover:bg-black/5"
-                    >
-                      Edit
-                    </button>
+          <section className="min-w-0">
+            <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#927b5d]">Catalog</p>
+                <h3 className="mt-1 text-2xl font-semibold tracking-tight">Your products <span className="text-[#9b9285]">({products.length})</span></h3>
+                <p className="mt-1 text-sm text-[#777168]">Edit details or control what customers can see.</p>
+              </div>
+              <div className="flex flex-col gap-2 sm:w-64">
+                <label htmlFor="product-search" className="sr-only">Search products</label>
+                <input id="product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="⌕  Search products..." className="w-full rounded-xl border border-[#e1d9cd] bg-white px-4 py-3 text-sm outline-none placeholder:text-[#a39a8d] focus:border-[#9b8668] focus:ring-4 focus:ring-[#b7a487]/15" />
+              </div>
+            </div>
 
-                    <button
-                      type="button"
-                      onClick={() => toggleProduct(product)}
-                      className="border-r border-black/10 px-1 py-3 text-xs font-semibold hover:bg-black/5"
-                    >
-                      {product.is_active ? "Hide" : "Show"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => deleteProduct(product)}
-                      className="px-1 py-3 text-xs font-semibold text-red-600 hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </article>
+            <div className="mb-5 flex flex-wrap gap-2">
+              {([ ["all", "All products", products.length], ["active", "Visible", activeCount], ["hidden", "Hidden", hiddenCount] ] as const).map(([value, label, count]) => (
+                <button key={value} type="button" onClick={() => setFilter(value)} className={`rounded-xl px-4 py-2.5 text-xs font-semibold transition ${filter === value ? "bg-[#201f1c] text-white shadow-sm" : "border border-[#e1d9cd] bg-white text-[#756d62] hover:border-[#b7a487]"}`}>
+                  {label} <span className={filter === value ? "ml-1 text-white/65" : "ml-1 text-[#a39a8d]"}>{count}</span>
+                </button>
               ))}
             </div>
-          )}
-        </section>
+
+            {visibleProducts.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#d9d0c3] bg-white px-5 py-16 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f4f1eb] text-2xl">⌕</div>
+                <p className="mt-4 font-semibold">{products.length === 0 ? "Your catalog is empty" : "No matching products"}</p>
+                <p className="mt-1 text-sm text-[#898174]">{products.length === 0 ? "Apna pehla product add karne ke liye form bharo." : "Search ya filter change karke dobara dekho."}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {visibleProducts.map((product) => (
+                  <article key={product.id} className="group overflow-hidden rounded-2xl border border-[#e5ded2] bg-white shadow-[0_4px_18px_rgba(42,35,25,0.025)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(42,35,25,0.08)]">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-[#ece7df]">
+                      {product.image_url ? <img src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" /> : <div className="flex h-full items-center justify-center text-sm text-[#9a9286]">No product photo</div>}
+                      <span className={`absolute left-3 top-3 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] backdrop-blur ${product.is_active ? "bg-emerald-50/95 text-emerald-800" : "bg-white/90 text-[#777168]"}`}>
+                        <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${product.is_active ? "bg-emerald-500" : "bg-[#aaa398]"}`} />
+                        {product.is_active ? "Visible" : "Hidden"}
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <h4 className="min-h-10 break-words text-sm font-semibold leading-5">{product.name}</h4>
+                      <p className="mt-2 text-xl font-semibold tracking-tight">₹{Number(product.price).toLocaleString("en-IN")}</p>
+                    </div>
+                    <div className="grid grid-cols-3 border-t border-[#eee8df]">
+                      <button type="button" onClick={() => startEditing(product)} className="border-r border-[#eee8df] px-2 py-3 text-xs font-semibold text-[#5f574b] transition hover:bg-[#f4f1eb]">Edit</button>
+                      <button type="button" onClick={() => toggleProduct(product)} className="border-r border-[#eee8df] px-2 py-3 text-xs font-semibold text-[#5f574b] transition hover:bg-[#f4f1eb]">{product.is_active ? "Hide" : "Show"}</button>
+                      <button type="button" onClick={() => deleteProduct(product)} className="px-2 py-3 text-xs font-semibold text-red-600 transition hover:bg-red-50">Delete</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+            <p className="mt-5 text-center text-[11px] text-[#a39a8d]">Showing {visibleProducts.length} of {products.length} products</p>
+          </section>
+        </div>
       </div>
     </main>
   );
