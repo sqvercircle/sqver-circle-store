@@ -252,7 +252,7 @@ Please share more details about this product. Thank you!`;
       </section>
 
       <footer className="border-t border-black/10 px-4 py-6 text-center text-[10px] tracking-[0.12em] text-black/45">
-        SQVER CIRCLE STORE · © {new Date().getFullYear()}
+        SQVER CIRCLE STORE · © 2026
       </footer>
 
       {selectedImage?.image_url && (
